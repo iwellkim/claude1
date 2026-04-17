@@ -4,6 +4,21 @@
 **할 수 있는 분석을 추천** 하고, 선택 또는 자연어 요청을 받아 **비주얼 HTML 보고서** 를
 만들어 주는 Flask 기반 웹 앱입니다.
 
+## 📱 휴대폰에서 바로 실행 — GitHub Codespaces (설치 0, 클릭 3번)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/iwellkim/claude1/tree/claude/data-analysis-platform-AHVHw)
+
+1. 위 버튼 → GitHub 계정으로 로그인 → **"Create codespace"** 누르면 자동으로
+   - Python · 한글 폰트(NanumGothic, Noto CJK) 설치
+   - 의존성 설치
+   - Flask 서버(포트 5000) 자동 기동
+2. 우측 하단 **"PORTS"** 탭 → 5000 포트 옆 🌐 아이콘 → 브라우저에서 열림
+3. 그 URL 을 휴대폰 브라우저에 복붙하거나, 휴대폰에서 github.com 에 로그인해 Codespace 열면
+   모바일 브라우저에서도 동일하게 동작합니다.
+
+> 💡 무료 할당량: 개인 계정 월 120 시간. 사용 안 할 땐 Codespace 를
+> **Stop** 하면 시간이 소진되지 않습니다.
+
 - 🔎 자동 컬럼 프로파일링: 역할(수치/범주/시간/ID) 추정, 결측·중복·분포 요약
 - 💡 분석 추천: 개요, 분포, 상관, 시계열, 세그먼트 비교, 교차표, 이상치,
   TOP/BOTTOM, 세그먼트별 시계열, K-평균 군집화
