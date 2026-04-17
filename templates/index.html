@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>비즈니스 데이터 분석 플랫폼</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --bg:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; --card:#111827; --border:#1f2937; --brand:#60a5fa; --accent:#34d399; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); color: var(--fg);
+    font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Nanum Gothic',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin:0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 18px; }
+  .upload { display:flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .btn { background: var(--brand); color:#0b1220; border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+  .btn.secondary { background: #1e293b; color: var(--fg); border: 1px solid var(--border); }
+  .btn.accent { background: var(--accent); color:#083822; }
+  input[type=file], input[type=text], select { background: #0b1220; color: var(--fg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  input[type=text] { width: 100%; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .rec { background: #0b1220; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .rec h3 { margin: 0; font-size: 15px; color: #e2e8f0; }
+  .rec p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .rec .tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .rec .tag { background:#1e3a8a; color:#dbeafe; font-size:11px; padding: 2px 8px; border-radius: 999px; }
+  .rec .row { display:flex; gap:8px; align-items:center; }
+  .rec label { font-size: 12px; color: var(--muted); }
+  .rec.selected { outline: 2px solid var(--brand); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; }
+  .col { background: #0b1220; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; }
+  .col .name { color: #e2e8f0; font-weight: 600; }
+  .col .role { color: var(--accent); font-size: 11px; }
+  .progress { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .hidden { display: none; }
+  a { color: var(--brand); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📊 비즈니스 데이터 분석 플랫폼</h1>
+      <div class="muted">CSV · Excel · JSON · Parquet 무엇이든 올리면 분석거리를 추천해 드립니다.</div>
+    </div>
+    <div class="muted">Korean Font: <b>{{ font_name }}</b></div>
+  </header>
+
+  <section class="card">
+    <h2 style="margin-top:0;">1. 데이터 업로드</h2>
+    <form id="uploadForm" class="upload" enctype="multipart/form-data">
+      <input type="file" id="file" name="file" required accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.parquet" />
+      <button class="btn" type="submit">업로드 & 프로파일링</button>
+      <span class="muted">최대 50MB 권장</span>
+    </form>
+    <div class="progress" id="progress"></div>
+  </section>
+
+  <section id="profileCard" class="card hidden">
+    <h2 style="margin-top:0;">2. 컬럼 프로파일</h2>
+    <div id="summaryLine" class="muted"></div>
+    <div class="cols" id="cols"></div>
+  </section>
+
+  <section id="recCard" class="card hidden">
+    <h2 style="margin-top:0;">3. 추천 분석 · 선택 또는 사용자 요청</h2>
+    <p class="muted">체크박스로 여러 분석을 고르거나, 아래 입력란에 자유롭게 요청을 적으세요. (예: "지역별 매출 시계열 추세 보여줘", "가격과 수량 상관", "이상치 탐지")</p>
+    <div id="recs" class="grid"></div>
+
+    <div style="margin-top:18px;">
+      <label class="muted" for="customReq">사용자 정의 요청</label>
+      <input id="customReq" type="text" placeholder="예: 카테고리별 매출 비교, 월별 주문수 추세, k=3 군집화" />
+      <div class="hint">한글·영문 자유롭게 적어 주세요. 여러 요청은 세미콜론(;) 으로 구분할 수 있습니다.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn accent" id="runBtn">선택한 분석 실행 → 보고서 생성</button>
+      <button class="btn secondary" id="selectAllBtn" type="button">모두 선택</button>
+      <button class="btn secondary" id="clearBtn" type="button">선택 해제</button>
+    </div>
+    <div class="progress" id="runProgress"></div>
+  </section>
+</div>
+
+<script>
+let sessionId = null;
+let profiles = [];
+let recs = [];
+
+const el = (id) => document.getElementById(id);
+
+el('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  el('progress').textContent = '업로드 중...';
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const js = await res.json();
+  if (!res.ok) { el('progress').textContent = '오류: ' + (js.error || res.statusText); return; }
+  sessionId = js.session_id;
+  profiles = js.profiles;
+  recs = js.recommendations;
+  el('progress').textContent = `업로드 완료: ${js.filename} (${js.summary.rows.toLocaleString()} 행 × ${js.summary.cols} 열)`;
+  renderProfiles(js.summary, js.profiles);
+  renderRecs(js.recommendations);
+});
+
+function renderProfiles(summary, profs) {
+  el('profileCard').classList.remove('hidden');
+  el('summaryLine').textContent = `행 ${summary.rows.toLocaleString()} · 열 ${summary.cols} · 결측 ${summary.missing_total.toLocaleString()} · 중복 ${summary.duplicate_rows.toLocaleString()}`;
+  const cols = el('cols');
+  cols.innerHTML = '';
+  profs.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'col';
+    div.innerHTML = `<div class="name">${escapeHtml(p.name)}</div>
+      <div class="role">${p.role} · ${p.dtype}</div>
+      <div class="muted">결측 ${p.missing_pct}% · 고유 ${p.unique.toLocaleString()}</div>`;
+    cols.appendChild(div);
+  });
+}
+
+function renderRecs(rs) {
+  el('recCard').classList.remove('hidden');
+  const root = el('recs');
+  root.innerHTML = '';
+  rs.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'rec';
+    const cols = (r.columns || []).map(c => `<span class="tag">${escapeHtml(c)}</span>`).join('');
+    div.innerHTML = `
+      <h3>${escapeHtml(r.title)}</h3>
+      <p>${escapeHtml(r.description)}</p>
+      <div class="tags">${cols}</div>
+      <div class="row">
+        <input type="checkbox" id="rec_${i}" data-key="${r.key}" />
+        <label for="rec_${i}">이 분석 포함</label>
+      </div>`;
+    root.appendChild(div);
+  });
+}
+
+el('selectAllBtn').onclick = () => {
+  document.querySelectorAll('#recs input[type=checkbox]').forEach(c => c.checked = true);
+};
+el('clearBtn').onclick = () => {
+  document.querySelectorAll('#recs input[type=checkbox]').forEach(c => c.checked = false);
+};
+
+el('runBtn').onclick = async () => {
+  if (!sessionId) return;
+  const selectedKeys = [];
+  document.querySelectorAll('#recs input[type=checkbox]').forEach((c, i) => {
+    if (c.checked) selectedKeys.push(i);
+  });
+  const custom = el('customReq').value.trim();
+  if (selectedKeys.length === 0 && !custom) {
+    alert('최소 하나의 추천 분석을 선택하거나 사용자 요청을 입력하세요.');
+    return;
+  }
+  el('runProgress').textContent = '분석 실행 중... (차트 생성 포함 수 초 소요)';
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ session_id: sessionId, selected: selectedKeys, custom })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    el('runProgress').textContent = '오류: ' + (err.error || res.statusText);
+    return;
+  }
+  const js = await res.json();
+  el('runProgress').innerHTML = `완료 ✅ · <a href="${js.report_url}" target="_blank">보고서 열기</a> · <a href="${js.report_url}" download>HTML 다운로드</a>`;
+  window.open(js.report_url, '_blank');
+};
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+</script>
+</body>
+</html>

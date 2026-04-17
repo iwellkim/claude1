@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>데이터 분석 보고서 — {{ filename }}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --bg: #f7f8fb;
+    --fg: #1f2937;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --brand: #2563eb;
+    --accent: #10b981;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: 'Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Nanum Gothic',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+    line-height: 1.55; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  header.doc-head { border-bottom: 4px solid var(--brand); padding-bottom: 20px; margin-bottom: 28px; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--brand); font-weight: 700; text-transform: uppercase; }
+  h1 { margin: 6px 0 4px; font-size: 28px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .card h2 { margin: 0 0 14px; font-size: 20px; color: #111827; }
+  .card h3 { margin: 18px 0 10px; font-size: 15px; color: #374151; }
+  .exec ul { margin: 0; padding-left: 18px; }
+  .exec li { margin: 6px 0; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .kpi { background: linear-gradient(135deg,#eff6ff,#ecfeff); border: 1px solid #dbeafe; border-radius: 10px; padding: 14px 16px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; color: #0f172a; }
+  .chart img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); background: white; }
+  .tbl-wrap { overflow-x: auto; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.tbl th, table.tbl td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  table.tbl th { background: #f3f4f6; color: #111827; font-weight: 600; }
+  table.tbl tr:nth-child(even) td { background: #fafafa; }
+  .insights { background: #ecfdf5; border-left: 4px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin-top: 8px; }
+  .insights ul { margin: 4px 0 4px 16px; padding: 0; }
+  .section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .section-title .chip { background: var(--brand); color: white; font-size: 11px; padding: 2px 8px; border-radius: 999px; letter-spacing: .05em; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+  @media print {
+    body { background: white; }
+    .card { box-shadow: none; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc-head">
+    <div class="eyebrow">BUSINESS DATA REPORT</div>
+    <h1>데이터 분석 보고서 — {{ filename }}</h1>
+    <div class="meta">생성 시각: {{ generated_at }} · 한글 폰트: {{ font_name }}</div>
+  </header>
+
+  <div class="card exec">
+    <h2>핵심 요약 (Executive Summary)</h2>
+    {% if executive_summary %}
+      <ul>
+        {% for line in executive_summary %}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>주요 인사이트가 감지되지 않았습니다.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>데이터셋 기본 정보</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">행 수</div><div class="value">{{ "{:,}".format(summary.rows) }}</div></div>
+      <div class="kpi"><div class="label">열 수</div><div class="value">{{ summary.cols }}</div></div>
+      <div class="kpi"><div class="label">결측치</div><div class="value">{{ "{:,}".format(summary.missing_total) }}</div></div>
+      <div class="kpi"><div class="label">중복 행</div><div class="value">{{ "{:,}".format(summary.duplicate_rows) }}</div></div>
+      <div class="kpi"><div class="label">메모리(KB)</div><div class="value">{{ summary.memory_kb }}</div></div>
+    </div>
+  </div>
+
+  {% for section in sections %}
+    <section class="card">
+      <div class="section-title">
+        <span class="chip">SECTION {{ loop.index }}</span>
+        <h2 style="margin:0;">{{ section.title }}</h2>
+      </div>
+
+      {% for block in section.blocks %}
+        {% if block.kind == "kpi" %}
+          {% if block.title %}<h3>{{ block.title }}</h3>{% endif %}
+          <div class="kpi-grid">
+            {% for k in block.kpis %}
+              <div class="kpi"><div class="label">{{ k.label }}</div><div class="value">{{ k.value }}</div></div>
+            {% endfor %}
+          </div>
+        {% elif block.kind == "chart" %}
+          {% if block.title %}<h3>{{ block.title }}</h3>{% endif %}
+          <div class="chart"><img src="data:image/png;base64,{{ block.chart_b64 }}" alt="{{ block.title }}"/></div>
+        {% elif block.kind == "table" %}
+          {% if block.title %}<h3>{{ block.title }}</h3>{% endif %}
+          <div class="tbl-wrap">{{ block.table_html | safe }}</div>
+        {% elif block.kind == "text" %}
+          {% if block.title %}<h3>{{ block.title }}</h3>{% endif %}
+          {% if block.text %}<p>{{ block.text }}</p>{% endif %}
+          {% if block.insights %}
+            <div class="insights">
+              <ul>
+                {% for ins in block.insights %}<li>{{ ins }}</li>{% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    </section>
+  {% endfor %}
+
+  <footer>
+    Business Data Analysis Platform · 한글 폰트: {{ font_name }}
+  </footer>
+</div>
+</body>
+</html>
